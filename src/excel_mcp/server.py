@@ -72,26 +72,45 @@ mcp = FastMCP(
     instructions="Excel MCP Server for manipulating Excel files"
 )
 
+
+def _resolved_path_is_within(base: str, candidate: str) -> bool:
+    base = os.path.realpath(base)
+    candidate = os.path.realpath(candidate)
+    if candidate == base:
+        return True
+    try:
+        return os.path.commonpath([base, candidate]) == base
+    except ValueError:
+        return False
+
+
 def get_excel_path(filename: str) -> str:
     """Get full path to Excel file.
-    
+
     Args:
         filename: Name of Excel file
-        
+
     Returns:
         Full path to Excel file
     """
-    # If filename is already an absolute path, return it
-    if os.path.isabs(filename):
-        return filename
+    if not filename or "\x00" in filename:
+        raise ValueError(f"Invalid filename: {filename}")
 
-    # Check if in SSE mode (EXCEL_FILES_PATH is not None)
     if EXCEL_FILES_PATH is None:
-        # Must use absolute path
-        raise ValueError(f"Invalid filename: {filename}, must be an absolute path when not in SSE mode")
+        if not os.path.isabs(filename):
+            raise ValueError(f"Invalid filename: {filename}, must be an absolute path when not in SSE mode")
+        return os.path.normpath(filename)
 
-    # In SSE mode, if it's a relative path, resolve it based on EXCEL_FILES_PATH
-    return os.path.join(EXCEL_FILES_PATH, filename)
+    if os.path.isabs(filename):
+        raise ValueError(f"Invalid filename: {filename}, must be relative to EXCEL_FILES_PATH")
+
+    base = os.path.realpath(EXCEL_FILES_PATH)
+    candidate = os.path.realpath(os.path.join(base, filename))
+
+    if not _resolved_path_is_within(base, candidate):
+        raise ValueError(f"Invalid filename: {filename}, path escapes EXCEL_FILES_PATH")
+
+    return candidate
 
 @mcp.tool(
     annotations=ToolAnnotations(
