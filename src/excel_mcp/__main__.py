@@ -1,6 +1,9 @@
 import typer
 
 from .server import run_sse, run_stdio, run_streamable_http
+# Importing github_tools registers the GitHub Excel reading tools onto the
+# FastMCP instance defined in .server. Do not remove.
+from . import github_tools  # noqa: F401
 
 app = typer.Typer(help="Excel MCP Server")
 

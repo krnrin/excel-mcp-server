@@ -1,5 +1,5 @@
 # Railway-ready Dockerfile for excel-mcp-server
-# Uses uv to install dependencies from pyproject.toml + uv.lock,
+# Uses uv to install dependencies from pyproject.toml,
 # then runs the server in streamable-http mode bound to Railway's $PORT.
 
 FROM python:3.11-slim
@@ -13,8 +13,10 @@ WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
 
-# Install the project's dependencies into a project-local .venv
-RUN uv sync --frozen --no-dev
+# Install the project's dependencies into a project-local .venv.
+# We intentionally do NOT use --frozen so uv resolves freshly when
+# pyproject.toml changes (e.g. when new deps like requests are added).
+RUN uv sync --no-dev
 
 # Default env vars (override in Railway Variables if needed)
 #   EXCEL_FILES_PATH: where uploaded Excel files live (mount a Volume here)
